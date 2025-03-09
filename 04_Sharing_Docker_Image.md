@@ -23,6 +23,8 @@ To share your Docker image, you first need a **Docker Hub account**.
 
 Before pushing an image, you need to log in to **Docker Hub** from your terminal:  
 
+**Note:** You must be in your Ubuntu VM.  
+
 ```sh
 docker login
 ```
