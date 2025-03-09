@@ -17,7 +17,8 @@ sudo rm -rf /var/www/html/*
 Inside the **project root directory**, create a file named **Dockerfile**:  
 
 ```sh
-nano Dockerfile
+cd my-react-app/
+vi Dockerfile
 ```
 
 Paste the following content into the file:  
