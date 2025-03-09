@@ -14,6 +14,19 @@ To remove them, run:
 ```sh
 sudo rm -rf /var/www/html/*
 ```
+Stop Ngix:
+
+```sh
+sudo systemctl stop nginx
+```
+
+Make sure port 80 is not occupied:
+
+```sh
+sudo lsof -i :80
+```
+
+
 
 ### **Explanation:**
 - `sudo` → Runs the command as **root** (superuser) because modifying system files requires elevated permissions.  
@@ -100,7 +113,7 @@ docker build -t my-react-app .
 ---
 
 ## **4. Run the Docker Container and Expose It to the Host**
-Now, **run the container** and expose it on **port 80** so it’s accessible from the **public IP**:
+Now, **run the container** and expose it on **port 80** so it’s accessible from the **public IP**: 
 
 ```sh
 docker run -d -p 80:80 --name react-container my-react-app
