@@ -25,7 +25,6 @@ FROM node:18
 WORKDIR /app
 
 # Copy package.json and install dependencies
-COPY package*.json ./
 RUN npm init -y && npm install express mongoose cors body-parser
 
 # Copy application code
