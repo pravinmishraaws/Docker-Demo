@@ -261,11 +261,6 @@ EXPOSE 80
 CMD ["node", "index.js"]
 ```
 
-### **Changes and Improvements**
-- The backend now **runs on port 80** instead of 3000.
-- `EXPOSE 80` is used to make sure the correct port is open.
-- The `PORT` variable is now set to `80`, ensuring that the Express server listens on that port.
-
 ---
 
 ## **B: Build and Run the Backend Container**
@@ -340,7 +335,7 @@ docker ps
 Expected output:
 ```
 CONTAINER ID   IMAGE    COMMAND                 PORTS                    NAMES
-d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:3000->3000/tcp    backend
+d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:80->80/tcp    backend
 a8d2c9f8e6a7   nginx    "/docker-entrypoint.…"  80/tcp                    frontend
 ```
 Both `backend` and `frontend` should be listed.
@@ -374,7 +369,7 @@ Now, check if the `frontend` container can access the `backend` API using its **
 
 ```sh
 docker exec -it frontend apt update && docker exec -it frontend apt install curl -y
-docker exec -it frontend curl backend:3000
+docker exec -it frontend curl backend
 ```
 
 ### **Command Breakdown**
