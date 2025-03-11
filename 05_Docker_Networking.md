@@ -229,41 +229,95 @@ a9f58b94c8a0   mynetwork   bridge    local
 The new `mynetwork` should be listed.
 
 ## **Step 3: Run the Backend API**
-To prevent the container from **exiting immediately**, run a basic **Express.js API** inside the Node.js container.
 
+## **A: Create a Dockerfile for the Backend**
+Instead of running backend commands manually, a **Dockerfile** will be used to build a containerized backend service.
+
+### **Updated Dockerfile**
+```dockerfile
+# Use the official Node.js 18 image
+FROM node:18
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json if they exist (optional if using npm init)
+COPY package*.json ./
+
+# Initialize a new Node.js app and install Express
+RUN npm init -y && npm install express
+
+# Create index.js with basic Express code running on port 80
+RUN echo "const express = require('express'); \
+const app = express(); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+const PORT = 80; \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
+
+# Expose port 80 to the host
+EXPOSE 80
+
+# Run the application
+CMD ["node", "index.js"]
+```
+
+### **Changes and Improvements**
+- The backend now **runs on port 80** instead of 3000.
+- `EXPOSE 80` is used to make sure the correct port is open.
+- The `PORT` variable is now set to `80`, ensuring that the Express server listens on that port.
+
+---
+
+## **B: Build and Run the Backend Container**
+After creating the `Dockerfile`, the next steps are:
+
+### **Build the Docker Image**
 ```sh
-docker run -d --name backend --network mynetwork -p 3000:3000 node:18 bash -c "npm init -y && npm install express && echo \"const express = require('express'); const app = express(); app.get('/', (req, res) => res.send('Hello from Backend')); app.listen(3000, () => console.log('Backend running on port 3000'));\" > index.js && node index.js"
+docker build -t backend-app .
+```
+
+### **Run the Backend Container in the Custom Network**
+```sh
+docker run -d --name backend --network mynetwork -p 80:80 backend-app
 ```
 
 ### **Command Breakdown**
-- `docker run -d`: Runs the container in detached mode.
-- `--name backend`: Assigns the container the name `backend`.
-- `--network mynetwork`: Connects the container to `mynetwork`.
-- `-p 3000:3000`: Maps port `3000` inside the container to `3000` on the host.
-- `node:18`: Uses the Node.js 18 image as the base image.
-- `bash -c "npm init -y ..."`: Runs a small **Express.js server** inside the container.
+- `docker build -t backend-app .`: Creates a Docker image named `backend-app`.
+- `docker run -d --name backend`: Runs the backend container in detached mode with the name `backend`.
+- `--network mynetwork`: Ensures the backend is connected to `mynetwork`.
+- `-p 80:80`: Maps **container port 80** to **host port 80**.
 
-### **Verify Backend is Running**
-Check running containers:
+---
+
+## **C: Verify Backend is Running**
+Check the running containers:
+
 ```sh
 docker ps
 ```
 
 Expected output:
 ```
-CONTAINER ID   IMAGE    COMMAND                 PORTS                    NAMES
-d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:3000->3000/tcp    backend
+CONTAINER ID   IMAGE         COMMAND                  PORTS                   NAMES
+b1d5a7c8e9f2   backend-app   "node index.js"         0.0.0.0:80->80/tcp       backend
 ```
-Now, test if the backend API is working from the host:
+
+### **Test the Backend from the Host**
+Run the following command:
 
 ```sh
-curl http://localhost:3000
+curl http://<publicIP>
 ```
+
 Expected output:
 ```
 Hello from Backend
 ```
-This confirms that the backend is running correctly.
+
+This confirms that:
+- The **backend container is running on port 80**.
+- It is accessible from the **host machine**.
+
 
 ## **Step 4: Run the Frontend**
 Now, deploy an Nginx container as the frontend.
@@ -313,6 +367,9 @@ docker network inspect mynetwork
 This confirms that both containers are assigned internal IPs and are part of the same network.
 
 ## **Step 6: Test Communication Between Frontend and Backend**
+
+### **Option 1: Test Manually**
+
 Now, check if the `frontend` container can access the `backend` API using its **container name**.
 
 ```sh
@@ -334,6 +391,42 @@ If this output appears, it confirms that:
 - The `backend` container is running properly.
 - The `frontend` container can resolve `backend` by name.
 - The **custom bridge network is working correctly**.
+
+  
+### **Option 2: Enter the Frontend Container**
+Instead of running `docker exec` commands from the host, you can enter the `frontend` container interactively and then test connectivity.
+
+### **Step 1: Access the Frontend Container**
+```sh
+docker exec -it frontend /bin/sh
+```
+
+This opens an interactive shell inside the container.
+
+### **Step 2: Install Curl Inside the Container**
+Since the **default Nginx container does not have curl installed**, update the package lists and install curl:
+
+```sh
+apt update && apt install curl -y
+```
+
+### **Step 3: Test Backend API from Inside the Frontend Container**
+```sh
+curl backend
+```
+
+Expected output:
+```
+Hello from Backend
+```
+
+### **Step 4: Exit the Frontend Container**
+After testing, exit the container by running:
+
+```sh
+exit
+```
+
 
 ---
 
