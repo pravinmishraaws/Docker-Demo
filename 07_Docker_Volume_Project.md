@@ -426,40 +426,112 @@ b1d5a7c8e9f2   frontend-app  "node index.js"         0.0.0.0:80->80/tcp       fr
 ---
 
 ## **Step 7: Test Data Sharing Between Backend and Frontend**
-Now, let's verify that **data is written by the backend and read by the frontend**.
 
-### **Step A: Write Data from the Backend**
-Run the following command:
-
-```sh
-docker exec backend curl http://localhost/write
-```
-
-### **Expected Output**
-```
-Data written!
-```
-This confirms that the **backend has written "Hello from Backend!" to the shared volume**.
+Now, let's verify that data is written by the backend and read by the frontend while ensuring persistence across multiple writes.  
 
 ---
 
-### **Step B: Read Data from the Frontend**
-Now, fetch the stored data using the frontend:
+### **Step A: Write Data from the Backend**  
+1. Run the following command to write data from the backend:  
+   ```sh
+   docker exec backend curl http://localhost/write
+   ```
+2. **Expected Output:**  
+   ```
+   Data written!
+   ```
+   This confirms that the backend has written "Hello from Backend!" into the shared volume.  
 
-```sh
-curl http://localhost
-```
+---
 
-### **Expected Output**
-```
-Hello from Backend!
-```
+### **Step B: Read Data from the Frontend**  
+1. Run the following command on your host machine to fetch the stored data via the frontend:  
+   ```sh
+   http://<PublicIP>
+   ```
+2. **Expected Output:**  
+   ```
+   Hello from Backend!
+   ```
+   This confirms that the frontend is reading the data written by the backend.  
 
-### **Explanation of Data Sharing**
-1. **Backend writes data** (`Hello from Backend!`) into `/data/message.txt`.
-2. This file is stored in the **Docker volume** (`shared-data`).
-3. **Frontend reads the file** from `/data/message.txt` and returns its content.
+---
 
-This ensures **data persists**, even if the backend container is restarted.
+### **Step C: Manually Modify Data Multiple Times**  
+To further test data persistence, let's manually write new data and verify it updates correctly.  
 
+1. Write a custom message inside the backend container:  
+   ```sh
+   docker exec backend sh -c "echo 'Test Data 1' > /data/message.txt"
+   ```
+2. Read the updated data via the frontend:  
+   ```sh
+   http://<PublicIP>
+   ```
+   **Expected Output:**  
+   ```
+   Test Data 1
+   ```
+3. Write another update to simulate new data being generated:  
+   ```sh
+   docker exec backend sh -c "echo 'Test Data 2 - New Update' > /data/message.txt"
+   ```
+4. Read the new data from the frontend:  
+   ```sh
+   http://<PublicIP>
+   ```
+   **Expected Output:**  
+   ```
+   Test Data 2 - New Update
+   ```
+   This confirms that every update to the backend's data file is immediately reflected in the frontend.  
+
+---
+
+
+### **Step D: Manually Verify Data Inside the Shared Volume**  
+We can directly inspect the stored data in `shared-data` to confirm persistence.  
+
+1. List all Docker volumes:  
+   ```sh
+   docker volume ls
+   ```
+   **Expected Output:**  
+   ```
+   DRIVER    VOLUME NAME
+   local     shared-data
+   ```
+2. Inspect the volume’s data manually:  
+   ```sh
+   docker run --rm -v shared-data:/data alpine cat /data/message.txt
+   ```
+   **Expected Output:**  
+   ```
+   Test Data 2 - New Update
+   ```
+   This confirms that the data is stored persistently within the volume, even if the backend container is restarted.  
+
+---
+
+### **Step E: Restart Backend and Verify Persistence**  
+Since Docker volumes persist even if containers are removed, let's restart the backend and check if the data remains.  
+
+1. Stop and remove the backend container:  
+   ```sh
+   docker stop backend
+   docker rm backend
+   ```
+2. Re-run the backend container:  
+   ```sh
+   docker run -d --name backend --network mynetwork -v shared-data:/data backend-app
+   ```
+3. Read data from the frontend (it should still be available):  
+   ```sh
+   http://<PublicIP>
+   ```
+   **Expected Output:**  
+   ```
+   Test Data 2 - New Update
+   ```
+   This confirms that data remains stored in the volume even after the backend is restarted.  
 
