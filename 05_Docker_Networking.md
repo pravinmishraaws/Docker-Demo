@@ -122,13 +122,13 @@ docker stop <container_id>
 
 ### **Step 5: Run the Nginx Container**
 ```sh
-docker run -d -p 8080:80 --name myweb nginx
+docker run -d -p 80:80 --name myweb nginx
 ```
 
 ### **Command Breakdown**
 - `docker run`: Starts a new container.
 - `-d`: Runs the container in detached mode (in the background).
-- `-p 8080:80`: Maps port 8080 on the host machine to port 80 inside the container. This allows the application to be accessed via port 8080.
+- `-p 80:80`: Maps port 8080 on the host machine to port 80 inside the container. This allows the application to be accessed via port 8080.
 - `--name myweb`: Assigns the container a readable name for easy management.
 - `nginx`: Specifies the Nginx image, which serves static files.
 
@@ -140,14 +140,14 @@ docker ps
 ### **Expected Output**
 ```
 CONTAINER ID   IMAGE    COMMAND                  PORTS                    NAMES
-c1d5f7e2a15b   nginx    "/docker-entrypoint.…"   0.0.0.0:8080->80/tcp     myweb
+c1d5f7e2a15b   nginx    "/docker-entrypoint.…"   0.0.0.0:80->80/tcp     myweb
 ```
 - The container is now running and accessible.
 
 ### **Step 7: Access the Application**
 Open a web browser and go to:
 ```
-http://localhost:8080
+http://PublicIP
 ```
 You should see the Nginx welcome page.
 
