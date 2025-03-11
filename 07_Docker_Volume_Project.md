@@ -628,4 +628,113 @@ cat message.txt
 - **To check the volume from inside a running container, use `docker exec -it backend sh` and navigate to `/data`.**  
 
 
+# **How to Make Data Truly Persistent with Azure Managed Disks**  
+Currently, **Docker volumes store data inside the VM**, but if the **VM is deleted or restarted, all stored data is lost**. To ensure **true persistence**, we need to store the data on **external storage**. One of the best options in Azure is **Azure Managed Disks**.  
+
+---
+
+## **Option 1: Use an Azure Managed Disk for Persistent Storage**  
+Azure Managed Disks allow us to **attach an external disk** to the VM, ensuring that data persists even if the VM is stopped, restarted, or deleted.  
+
+---
+
+### **1. Create and Attach an Azure Managed Disk**  
+#### **A: Create a Managed Disk in Azure**  
+1. Open the **Azure Portal**.  
+2. Go to **Disks** → **Create a new Managed Disk**.  
+3. Choose:  
+   - **Disk Type**: Standard HDD, Standard SSD, or Premium SSD.  
+   - **Size**: Choose a size that meets your storage needs.  
+   - **Resource Group**: Select the resource group for your VM.  
+   - **Encryption**: Use default encryption unless a specific policy is required.  
+4. Click **Create**.  
+
+#### **B: Attach the Disk to Your VM**  
+1. Open **Azure Portal**.  
+2. Go to **Virtual Machines** → Select your VM.  
+3. Click **Disks** → **Attach existing disk**.  
+4. Select the **Managed Disk** created earlier.  
+5. Click **Save**.  
+
+---
+
+### **2. Mount the Disk on the VM**  
+Once the disk is attached to the VM, it needs to be **formatted and mounted**.  
+
+#### **A: List Available Disks**  
+Run the following command to find the **newly attached disk**:  
+```sh
+lsblk
+```  
+You should see an unmounted disk, such as `/dev/sdc` or `/dev/sdb`.  
+
+#### **B: Create a Filesystem on the New Disk**  
+Replace `/dev/sdc` with your actual disk name:  
+```sh
+sudo mkfs -t ext4 /dev/sdc
+```  
+
+#### **C: Create a Mount Directory**  
+```sh
+sudo mkdir -p /mnt/data-storage
+```  
+
+#### **D: Mount the Disk**  
+```sh
+sudo mount /dev/sdc /mnt/data-storage
+```  
+
+#### **E: Make the Mount Persistent After Reboots**  
+To ensure the disk remains mounted even after a VM restart, update `/etc/fstab`:  
+```sh
+echo '/dev/sdc /mnt/data-storage ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
+```  
+
+---
+
+### **3. Use the Mounted Disk as Persistent Storage for Docker**  
+Now, update **Docker to use the Azure Managed Disk as a persistent storage location**.  
+
+#### **A: Run the Backend Container with a Bind Mount to the Managed Disk**  
+```sh
+docker run -d --name backend --network mynetwork -v /mnt/data-storage:/data backend-app
+```  
+- This ensures that all backend data is stored in `/mnt/data-storage`, which is on the Azure Managed Disk.  
+- If the VM restarts or is recreated, the data will still be available.  
+
+#### **B: Verify Data Persistence**  
+1. **Write Data from the Backend:**  
+   ```sh
+   docker exec backend curl http://localhost/write
+   ```  
+2. **Manually Check if the File Exists on the Mounted Disk:**  
+   ```sh
+   ls -l /mnt/data-storage
+   ```  
+   **Expected Output:**  
+   ```
+   -rw-r--r--  1 root root  20 Mar 11 12:45 message.txt
+   ```  
+3. **Reboot the VM and Verify the Data Again:**  
+   ```sh
+   curl http://localhost
+   ```  
+   The response should still be:  
+   ```
+   Hello from Backend!
+   ```  
+
+---
+
+## **Key Takeaways**  
+- **Azure Managed Disks ensure data persistence across VM restarts and deletions.**  
+- **The disk is mounted at `/mnt/data-storage`**, and Docker stores data there using a bind mount.  
+- **Even if the VM is deleted, the disk can be reattached to a new VM, ensuring no data loss.**  
+- **This method is better than Docker volumes stored in `/var/lib/docker/volumes/`, which would be lost if the VM is deleted.**  
+
+## Option 2: Use an NFS Storage
+## Option 3: Use Cloud Storage Volumes for Docker
+## Option 4: Store Data in a Database Instead
+
+
 
