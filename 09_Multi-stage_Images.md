@@ -1,112 +1,170 @@
-## **Tutorial: Multi-Stage Build with Docker (Optimizing the Frontend Container)**  
+## **Optimizing the Backend with Multi-Stage Build in Docker**
 
-### **Problem Statement**  
-In our previous **frontend Dockerfile**, we used **Nginx** to serve a React application. However, the Docker image still contained unnecessary dependencies, increasing the **image size** and making it inefficient.  
+### **Problem Statement**
+Previously, the backend service was built using a **single-stage Dockerfile**. This approach:
+- Increased the image size because it contained **unnecessary build dependencies**.
+- Included development tools, making the final image less secure.
+- Made deployment inefficient by storing everything inside a single large container.
 
-A **multi-stage build** allows us to:  
-- Build the React application inside a **Node.js container** (with dependencies).  
-- Copy only the **optimized production build** to a **lightweight Nginx container**.  
-- Reduce the final image size and improve security.  
+A **multi-stage build** allows us to:
+- Build the backend application inside a **Node.js container** with all dependencies.
+- Copy only the **necessary runtime files** to a **lightweight Node.js container**.
+- Reduce the final image size and improve security.
 
 ---
 
-## **Step 1: Comparing Single-Stage and Multi-Stage Builds**  
+## **Step 1: Single-Stage Dockerfile (Before Optimization)**  
 
-Before using a **multi-stage build**, let's create a **single-stage** Dockerfile and check the image size.  
-
-### **Single-Stage Dockerfile (Inefficient Approach)**  
-
-Inside `multi-tier-app/frontend/Dockerfile`, add the following:  
+Inside `multi-tier-app/backend/Dockerfile`, the original single-stage build looked like this:
 
 ```dockerfile
-# Use Node.js as the base image
+# Use the official Node.js image
 FROM node:18
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
 # Copy package.json and install dependencies
-RUN npm install
+COPY package*.json ./
+RUN npm init -y && npm install express mongoose cors body-parser
 
-# Copy all application files
+# Copy application code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Create index.js with Express API and MongoDB connection
+RUN echo "const express = require('express'); \
+const mongoose = require('mongoose'); \
+const app = express(); \
+const PORT = 80; \
+mongoose.connect('mongodb://db:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true }) \
+.then(() => console.log('Connected to MongoDB')) \
+.catch(err => console.log('MongoDB connection error:', err)); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
 
 # Expose port 80
 EXPOSE 80
 
 # Run the application
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
+```
+
+
+
+
+
+
+## **Step 1: Single-Stage Dockerfile (Before Optimization) - Checking Image Size**
+
+Inside `multi-tier-app/backend/Dockerfile`, the original **single-stage** build looked like this:
+
+```dockerfile
+# Use the official Node.js image
+FROM node:18
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm init -y && npm install express mongoose cors body-parser
+
+# Copy application code
+COPY . .
+
+# Create index.js with Express API and MongoDB connection
+RUN echo "const express = require('express'); \
+const mongoose = require('mongoose'); \
+const app = express(); \
+const PORT = 80; \
+mongoose.connect('mongodb://db:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true }) \
+.then(() => console.log('Connected to MongoDB')) \
+.catch(err => console.log('MongoDB connection error:', err)); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
+
+# Expose port 80
+EXPOSE 80
+
+# Run the application
+CMD ["node", "index.js"]
 ```
 
 ### **Build and Check Image Size**
+Navigate to the `multi-tier-app/` directory and build the **single-stage backend image**:
+
 ```sh
-docker build -t frontend-single-stage ./frontend
-docker images frontend-single-stage
+docker build -t backend-single-stage ./backend
 ```
+
+Now, check the image size:
+```sh
+docker images backend-single-stage
+```
+
 Expected output:
 ```
 REPOSITORY              TAG       IMAGE ID       SIZE
-frontend-single-stage   latest    abc123def456   1.2GB
+backend-single-stage   latest    abc123def456   1GB
 ```
-The image is large because it contains:  
-- The entire **Node.js runtime**.  
-- Development dependencies, even though they are not needed in production.  
+
+### **Problems with This Approach**
+1. **Large Image Size** → The final image contains **Node.js and all dependencies**, making it **1GB or more**.
+2. **Security Risk** → Development dependencies (e.g., `npm init -y`) are included in production.
+3. **No Build Separation** → All stages (building and running) are handled inside the same container.
 
 ---
 
-## **Step 2: Optimizing with Multi-Stage Build**  
+## **Step 2: Optimized Multi-Stage Dockerfile**
 
-A **multi-stage Dockerfile** consists of:  
-1. **Stage 1 (Build Stage)** → Uses **Node.js** to install dependencies and create a production-ready build.  
-2. **Stage 2 (Runtime Stage)** → Uses **Nginx** to serve the optimized React build, without unnecessary files.  
-
----
-
-## **Step 3: Multi-Stage Dockerfile**  
-
-Modify `multi-tier-app/frontend/Dockerfile` to use **multi-stage builds**:  
+Modify `multi-tier-app/backend/Dockerfile` to use **multi-stage builds**:
 
 ```dockerfile
-# Stage 1: Build the React Application
+# Stage 1: Build the Backend Application
 FROM node:18 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and install dependencies
-RUN npm install
+# Copy package.json and install dependencies (only production dependencies)
+COPY package*.json ./
+RUN npm install --only=production
 
-# Copy the entire project and build the app
+# Copy the entire application code
 COPY . .
-RUN npm run build
 
-# Stage 2: Serve the Application with Nginx
-FROM nginx:alpine
+# Create index.js with Express API and MongoDB connection
+RUN echo "const express = require('express'); \
+const mongoose = require('mongoose'); \
+const app = express(); \
+const PORT = 80; \
+mongoose.connect('mongodb://db:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true }) \
+.then(() => console.log('Connected to MongoDB')) \
+.catch(err => console.log('MongoDB connection error:', err)); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
 
-# Set working directory in Nginx
-WORKDIR /usr/share/nginx/html
+# Stage 2: Create a Lightweight Runtime Container
+FROM node:18-slim
 
-# Remove default Nginx static files
-RUN rm -rf ./*
+# Set the working directory
+WORKDIR /app
 
-# Copy the built application from the first stage
-COPY --from=builder /app/build .
+# Copy only necessary files from the builder stage
+COPY --from=builder /app .
 
-# Expose port 80 for incoming traffic
+# Expose port 80 for incoming requests
 EXPOSE 80
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Run the application
+CMD ["node", "index.js"]
 ```
 
 ---
 
-## **Step 4: Explaining the Multi-Stage Build (Line by Line)**  
+## **Step 3: Explaining the Multi-Stage Build (Line by Line)**  
 
-### **Stage 1: Build the React Application**  
+### **Stage 1: Build the Backend Application**  
 
 ```dockerfile
 FROM node:18 AS builder
@@ -120,101 +178,112 @@ WORKDIR /app
 - Sets the working directory inside the container.
 
 ```dockerfile
-RUN npm install
+COPY package*.json ./
+RUN npm install --only=production
 ```
-- Installs dependencies **before copying the rest of the code**.
+- Copies only the `package.json` files to leverage **Docker caching**.
+- Installs only **production dependencies** (`--only=production`) to avoid unnecessary packages.
 
 ```dockerfile
 COPY . .
-RUN npm run build
 ```
-- Copies all the application files.
-- Runs `npm run build` to generate the **production-ready React application**.
+- Copies all application files.
+
+```dockerfile
+RUN echo "const express = require('express'); \
+const mongoose = require('mongoose'); \
+const app = express(); \
+const PORT = 80; \
+mongoose.connect('mongodb://db:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true }) \
+.then(() => console.log('Connected to MongoDB')) \
+.catch(err => console.log('MongoDB connection error:', err)); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
+```
+- Generates an Express-based API and connects it to MongoDB.
 
 ---
 
-### **Stage 2: Serve the Application with Nginx**  
+### **Stage 2: Create a Lightweight Runtime Container**  
 
 ```dockerfile
-FROM nginx:alpine
+FROM node:18-slim
 ```
-- Uses **Nginx Alpine** as the final lightweight image (small and optimized for serving static files).
+- Uses **Node.js 18-slim**, a smaller image that reduces size by removing unnecessary tools.
 
 ```dockerfile
-WORKDIR /usr/share/nginx/html
+WORKDIR /app
 ```
-- Sets the working directory to Nginx’s default static file location.
+- Sets the working directory inside the runtime container.
 
 ```dockerfile
-RUN rm -rf ./*
+COPY --from=builder /app .
 ```
-- Removes the default Nginx static files.
-
-```dockerfile
-COPY --from=builder /app/build .
-```
-- Copies the production-ready **build files** from the `builder` stage.  
-- This eliminates unnecessary development files and dependencies.
+- Copies only the necessary files from the `builder` stage.
 
 ```dockerfile
 EXPOSE 80
 ```
-- Exposes port **80** to serve the application.
+- Exposes port **80** to accept requests.
 
 ```dockerfile
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "index.js"]
 ```
-- Runs **Nginx** in the foreground to serve the static files.
+- Runs the **Node.js backend service**.
 
 ---
 
-## **Step 5: Build and Run the Optimized Image**  
-Navigate to `multi-tier-app/` and build the **optimized frontend image**:  
+## **Step 4: Build and Run the Optimized Image**  
+Navigate to `multi-tier-app/` and build the **optimized backend image**:  
 ```sh
-docker build -t frontend-multi-stage ./frontend
+docker build -t backend-multi-stage ./backend
 ```
 
 Run the **container**:
 ```sh
-docker run -d --name ui -p 80:80 frontend-multi-stage
+docker run -d --name api -p 80:80 backend-multi-stage
 ```
 
-Verify that the **frontend application is accessible**:
+Verify that the **backend application is running**:
 ```sh
 curl http://localhost
+```
+Expected output:
+```
+Hello from Backend
 ```
 
 ---
 
-## **Step 6: Compare Image Sizes**  
+## **Step 5: Compare Image Sizes**  
 Check the size of the optimized image:
 ```sh
-docker images frontend-multi-stage
+docker images backend-multi-stage
 ```
 Expected output:
 ```
 REPOSITORY              TAG       IMAGE ID       SIZE
-frontend-multi-stage    latest    xyz789ghi123   25MB
+backend-multi-stage    latest    xyz789ghi123   60MB
 ```
 
 ### **Size Comparison Table**
 | Build Type | Image Size |
 |------------|------------|
-| **Single-Stage (Node.js)** | 1.2GB |
-| **Multi-Stage (Optimized)** | 25MB |
+| **Single-Stage (Node.js)** | 1GB |
+| **Multi-Stage (Optimized)** | 60MB |
 
-By using a multi-stage build, the final image is **significantly smaller** because:  
-- The **Node.js runtime** is no longer included.  
-- Only the **production build** is copied to the final image.  
+By using a multi-stage build, the final image is significantly smaller because:  
+- The **full Node.js runtime** is no longer included.  
+- Only **necessary runtime files** are copied.  
+- Development dependencies are **excluded**.
 
 ---
 
 ## **Key Benefits of Multi-Stage Builds**
 | Feature | Without Multi-Stage | With Multi-Stage |
 |---------|---------------------|------------------|
-| **Image Size** | Large (includes Node.js & dependencies) | Small (only contains optimized React build) |
+| **Image Size** | Large (includes Node.js & dependencies) | Small (only contains optimized backend code) |
 | **Security** | Exposes unnecessary tools | Minimal attack surface |
 | **Performance** | Slower due to large image | Faster startup & deployment |
 | **Best For** | Development environments | Production deployments |
-
 
