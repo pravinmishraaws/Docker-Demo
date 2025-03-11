@@ -160,44 +160,145 @@ You should see the Nginx welcome page.
 
 ---
 
-## **Scenario 2: Two Containers Communicating (Microservices)**
-### **Problem Statement**
-A frontend application needs to fetch data from a backend API. Using `localhost` will not work inside Docker.
+# **Scenario 2: Two Containers Communicating (Microservices)**
+## **Problem Statement**
+A frontend application needs to fetch data from a backend API inside Docker. Using `localhost` will not work because each container runs in its own isolated environment.
 
-### **Solution**
-A custom bridge network will be created so that containers can communicate using names instead of IP addresses.
+## **Solution**
+A **custom bridge network** will be created so that containers can communicate **using container names instead of IP addresses**.
 
-### **Step 1: Create a Custom Network**
+
+## **Step 1: Cleanup Previous Containers and Images**
+Before setting up the new scenario, stop and remove any containers and images from the **previous scenario**.
+
+### **Stop and Remove the Running Container**
+Check if any containers are running:
+```sh
+docker ps
+```
+Expected output (if any containers are running):
+```
+CONTAINER ID   IMAGE    COMMAND                  PORTS                    NAMES
+c1d5f7e2a15b   nginx    "/docker-entrypoint.…"   0.0.0.0:8080->80/tcp     myweb
+```
+If the `myweb` container is running, stop it:
+```sh
+docker stop myweb
+```
+Remove the container:
+```sh
+docker rm myweb
+```
+
+### **Remove Unused Images**
+Check for unused images:
+```sh
+docker images
+```
+If the Nginx image is no longer needed, remove it:
+```sh
+docker rmi nginx
+```
+
+At this point, the system is clean and ready for the new scenario.
+
+
+## **Step 2: Create a Custom Network**
+Before running any containers, create a dedicated network where the backend and frontend will communicate.
+
 ```sh
 docker network create mynetwork
 ```
 
 ### **Command Breakdown**
-- `docker network create mynetwork`: Creates a new bridge network named `mynetwork`. This allows multiple containers to communicate using names instead of IP addresses.
+- `docker network create mynetwork`: Creates a new bridge network named `mynetwork`. Containers connected to this network can communicate using their names instead of IP addresses.
 
-### **Step 2: Run the Backend API**
+Verify that the network was created successfully:
 ```sh
-docker run -d --name backend --network mynetwork node:18
+docker network ls
+```
+
+Expected output:
+```
+NETWORK ID     NAME        DRIVER    SCOPE
+7b369f1d82a3   bridge      bridge    local
+44e59ebc37a7   host        host      local
+4bb30e91a290   none        null      local
+a9f58b94c8a0   mynetwork   bridge    local
+```
+The new `mynetwork` should be listed.
+
+## **Step 3: Run the Backend API**
+To prevent the container from **exiting immediately**, run a basic **Express.js API** inside the Node.js container.
+
+```sh
+docker run -d --name backend --network mynetwork -p 3000:3000 node:18 bash -c "npm init -y && npm install express && echo \"const express = require('express'); const app = express(); app.get('/', (req, res) => res.send('Hello from Backend')); app.listen(3000, () => console.log('Backend running on port 3000'));\" > index.js && node index.js"
 ```
 
 ### **Command Breakdown**
 - `docker run -d`: Runs the container in detached mode.
 - `--name backend`: Assigns the container the name `backend`.
-- `--network mynetwork`: Connects the container to `mynetwork`, allowing it to communicate with other containers in the same network.
-- `node:18`: Uses the Node.js 18 image for the backend service.
+- `--network mynetwork`: Connects the container to `mynetwork`.
+- `-p 3000:3000`: Maps port `3000` inside the container to `3000` on the host.
+- `node:18`: Uses the Node.js 18 image as the base image.
+- `bash -c "npm init -y ..."`: Runs a small **Express.js server** inside the container.
 
-### **Step 3: Run the Frontend**
+### **Verify Backend is Running**
+Check running containers:
+```sh
+docker ps
+```
+
+Expected output:
+```
+CONTAINER ID   IMAGE    COMMAND                 PORTS                    NAMES
+d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:3000->3000/tcp    backend
+```
+Now, test if the backend API is working from the host:
+
+```sh
+curl http://localhost:3000
+```
+Expected output:
+```
+Hello from Backend
+```
+This confirms that the backend is running correctly.
+
+## **Step 4: Run the Frontend**
+Now, deploy an Nginx container as the frontend.
+
 ```sh
 docker run -d --name frontend --network mynetwork nginx
 ```
 
-### **Step 4: Verify Network Connections**
+### **Command Breakdown**
+- `docker run -d`: Runs the container in detached mode.
+- `--name frontend`: Assigns the container the name `frontend`.
+- `--network mynetwork`: Connects the container to `mynetwork`.
+- `nginx`: Uses Nginx as the frontend service.
+
+Verify that the frontend is running:
+```sh
+docker ps
+```
+
+Expected output:
+```
+CONTAINER ID   IMAGE    COMMAND                 PORTS                    NAMES
+d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:3000->3000/tcp    backend
+a8d2c9f8e6a7   nginx    "/docker-entrypoint.…"  80/tcp                    frontend
+```
+Both `backend` and `frontend` should be listed.
+
+## **Step 5: Verify Network Connectivity**
+Inspect the custom network:
 ```sh
 docker network inspect mynetwork
 ```
 
 ### **Expected Output**
-```
+```json
 "Containers": {
     "backend": {
         "Name": "backend",
@@ -209,24 +310,30 @@ docker network inspect mynetwork
     }
 }
 ```
-- The `frontend` and `backend` containers now have internal IP addresses.
-- They can communicate using names instead of IP addresses.
+This confirms that both containers are assigned internal IPs and are part of the same network.
 
-### **Step 5: Test Communication**
-To confirm communication, execute the following command inside the frontend container:
+## **Step 6: Test Communication Between Frontend and Backend**
+Now, check if the `frontend` container can access the `backend` API using its **container name**.
+
 ```sh
+docker exec -it frontend apt update && docker exec -it frontend apt install curl -y
 docker exec -it frontend curl backend:3000
 ```
-- `docker exec -it`: Runs a command inside a running container.
-- `frontend`: Specifies the container where the command should be executed.
-- `curl backend:3000`: Tries to access the backend API inside the same network.
 
-If successful, this will return a response from the backend.
+### **Command Breakdown**
+- `docker exec -it frontend`: Runs a command inside the `frontend` container.
+- `apt update`: Updates the package lists (since the Nginx image does not include `curl` by default).
+- `apt install curl -y`: Installs `curl` inside the frontend container.
+- `curl backend:3000`: Tries to access the backend API.
 
-### **Key Takeaways**
-- A custom network **eliminates the need for IP tracking**.
-- Containers in the same network **can communicate by name**.
-- This method is useful for **microservices architectures**.
+### **Expected Output**
+```
+Hello from Backend
+```
+If this output appears, it confirms that:
+- The `backend` container is running properly.
+- The `frontend` container can resolve `backend` by name.
+- The **custom bridge network is working correctly**.
 
 ---
 
