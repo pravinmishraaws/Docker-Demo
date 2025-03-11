@@ -131,8 +131,9 @@ WORKDIR /app
 # Copy the Go source code
 COPY main.go .
 
-# Compile the Go application
-RUN go mod init app && go mod tidy && go build -o app
+# Build the Go application with static linking
+RUN go mod init app && go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app
 
 # Stage 2: Create a Minimal Runtime Image
 FROM alpine:latest
