@@ -26,7 +26,6 @@ FROM node:18
 WORKDIR /app
 
 # Copy package.json and install dependencies
-COPY package.json package-lock.json ./
 RUN npm install
 
 # Copy all application files
@@ -78,7 +77,6 @@ FROM node:18 AS builder
 WORKDIR /app
 
 # Copy package.json and install dependencies
-COPY package.json package-lock.json ./
 RUN npm install
 
 # Copy the entire project and build the app
@@ -122,10 +120,8 @@ WORKDIR /app
 - Sets the working directory inside the container.
 
 ```dockerfile
-COPY package.json package-lock.json ./
 RUN npm install
 ```
-- Copies the **package.json** files first to leverage **Docker's caching mechanism**.  
 - Installs dependencies **before copying the rest of the code**.
 
 ```dockerfile
