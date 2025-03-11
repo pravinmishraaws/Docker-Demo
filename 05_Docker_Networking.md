@@ -621,17 +621,50 @@ docker network connect frontend-network api
 ---
 
 ## **Step 8: Verify Network Connectivity**
+
 ### **Check Network Connections**
+To verify that each service is correctly attached to the appropriate networks, inspect the networks:
+
 ```sh
 docker network inspect backend-network
 docker network inspect frontend-network
 ```
-- The backend should now appear in both networks.
 
-### **Test FrontEnd from the Host**
+Expected output for `backend-network`:
+```json
+"Containers": {
+    "db": {
+        "Name": "db",
+        "IPv4Address": "192.168.1.2/24"
+    },
+    "api": {
+        "Name": "api",
+        "IPv4Address": "192.168.1.3/24"
+    }
+}
+```
+
+Expected output for `frontend-network`:
+```json
+"Containers": {
+    "api": {
+        "Name": "api",
+        "IPv4Address": "192.168.2.2/24"
+    },
+    "ui": {
+        "Name": "ui",
+        "IPv4Address": "192.168.2.3/24"
+    }
+}
+```
+
+### **Test Frontend from the Host**
+Since the frontend is exposed to port `80`, it should be accessible via the public IP.
+
 ```sh
 curl http://PublicIP
 ```
+
 Expected output:
 ```
 Welcome to nginx!
@@ -643,16 +676,109 @@ Commercial support is available at nginx.com.
 Thank you for using nginx.
 ```
 
+This confirms that:
+- The frontend **is running properly**.
+- Nginx is **serving the application**.
+
+---
+
 ### **Test Frontend and Backend Communication**
-```sh
-docker exec -it ui /bin/sh
-```
-Inside the frontend container:
-```sh
-curl api
-```
+Now, verify if the **frontend can communicate with the backend**.
+
+1. Enter the **frontend container**:
+   ```sh
+   docker exec -it ui /bin/sh
+   ```
+2. Inside the **frontend container**, run:
+   ```sh
+   curl api
+   ```
+   
 Expected output:
 ```
 Hello from Backend
 ```
-- This confirms the **frontend successfully communicates with the backend**.
+
+This confirms:
+- The **frontend successfully connects to the backend**.
+- The **backend is responding** to requests.
+
+---
+
+### **Test Backend and Database Communication**
+Now, verify that the **backend can communicate with MongoDB**.
+
+1. Enter the **backend container**:
+   ```sh
+   docker exec -it api /bin/sh
+   ```
+
+
+## **Step 1: Access the Backend Container**
+
+First, enter the **backend container** (`api`):
+
+```sh
+docker exec -it api /bin/sh
+```
+
+## Install MongoDB Shell (`mongosh`) Inside the Backend Container**
+Run the following commands inside the container:
+
+```sh
+apt-get update
+apt-get install -y wget gnupg
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
+echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+apt-get update
+apt-get install -y mongodb-mongosh
+``
+
+
+2. Inside the **backend container**, run the MongoDB shell:
+   ```sh
+   mongosh --host db --port 27017
+   ```
+   
+Expected output:
+```
+Current MongoDB server version: 5.x.x
+Connecting to: mongodb://db:27017/
+```
+
+3. Create a test database and collection:
+   ```sh
+   use testdb
+   db.users.insertOne({ name: "Alice", age: 25 })
+   ```
+   
+Expected output:
+```
+{ acknowledged: true, insertedId: ObjectId("...")
+```
+
+4. Retrieve data to confirm the insertion:
+   ```sh
+   db.users.find()
+   ```
+   
+Expected output:
+```
+{ "_id": ObjectId("..."), "name": "Alice", "age": 25 }
+```
+
+5. Exit the MongoDB shell:
+   ```sh
+   exit
+   ```
+6. Exit the backend container:
+   ```sh
+   exit
+   ```
+
+This confirms:
+- The **backend can connect to the database**.
+- MongoDB **is working correctly**.
+- Data can be **written and retrieved** from the database.
+
+---
