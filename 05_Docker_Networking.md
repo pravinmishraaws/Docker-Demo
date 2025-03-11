@@ -425,41 +425,248 @@ exit
 
 ---
 
-## **Scenario 3: Connecting a Database to an Application**
-### **Problem Statement**
-A Flask API needs to connect to a PostgreSQL database inside Docker.
+
+# **Scenario 3: Multi-Tier Architecture (Frontend, Backend, Database)**
+
+## **Problem Statement**
+A complete web application consists of three components:
+
+- **Frontend (React)**
+- **Backend (Node.js)**
+- **Database (MongoDB)**
+
+Each service must communicate with others while maintaining **security and isolation**:
+- The **database should be hidden** from external access.
+- The **backend should access the database** but should not be exposed to the internet.
+- The **frontend should only talk to the backend** but should not directly access the database.
 
 ### **Solution**
-A custom network will be created to connect the application and database containers.
-
-### **Step 1: Create a Network**
-```sh
-docker network create dbnetwork
-```
-
-### **Step 2: Start PostgreSQL**
-```sh
-docker run -d --name database --network dbnetwork -e POSTGRES_PASSWORD=mysecretpassword postgres
-```
-
-### **Command Breakdown**
-- `-e POSTGRES_PASSWORD=mysecretpassword`: Sets the database password.
-- `--network dbnetwork`: Ensures the database is only accessible within the network.
-
-### **Step 3: Start Flask API**
-```sh
-docker run -d --name flaskapp --network dbnetwork python:3.9
-```
-
-### **Step 4: Configure Flask**
-Modify the Flask configuration:
-```python
-DATABASE_URL = "postgresql://postgres:mysecretpassword@database:5432/mydb"
-```
-- `database`: The PostgreSQL container name, which can now be used instead of an IP.
-
-### **Key Takeaways**
-- The database remains **hidden** from external access.
-- The application can resolve `database` by name inside the network.
+We will use **multiple Docker networks** to control communication:
+1. **Backend network**: Connects the backend and the database.
+2. **Frontend network**: Connects the frontend and the backend.
 
 ---
+
+## **Step 1: Clean Up Old Resources**
+Before setting up the new architecture, stop and remove all running containers, delete networks, and ensure a fresh start.
+
+### **Stop and Remove Running Containers**
+```sh
+docker ps -q | xargs -r docker stop
+docker ps -aq | xargs -r docker rm
+```
+- `docker ps -q` lists all running container IDs.
+- `docker ps -aq` lists all container IDs (including stopped ones).
+- `xargs -r docker stop` stops all running containers.
+- `xargs -r docker rm` removes all containers.
+
+### **Remove Custom Networks**
+```sh
+docker network ls | grep '-network' | awk '{print $1}' | xargs -r docker network rm
+```
+- Lists all networks and removes any custom-created ones.
+
+### **Remove Unused Images**
+```sh
+docker images -q | xargs -r docker rmi -f
+```
+- Removes all unused images.
+
+Now, the system is clean and ready for setup.
+
+---
+
+## **Step 2: Create the Required Networks**
+```sh
+docker network create backend-network
+docker network create frontend-network
+```
+- `backend-network`: Used by the backend and database.
+- `frontend-network`: Used by the frontend and backend.
+
+---
+
+## **Step 3: Set Up the Folder Structure**
+Create the project structure:
+
+```sh
+mkdir -p multi-tier-app/{frontend,backend,database}
+```
+
+Folder structure:
+```
+multi-tier-app/
+│-- frontend/
+│   └── Dockerfile
+│-- backend/
+│   └── Dockerfile
+│-- database/
+│   └── Dockerfile
+```
+
+Now, create **Dockerfiles** for each layer.
+
+---
+
+## **Step 4: Create the Database Layer (MongoDB)**
+Inside the `multi-tier-app/database/` folder, create a **Dockerfile**:
+
+```sh
+cd multi-tier-app/database
+touch Dockerfile
+```
+
+### **Dockerfile for MongoDB**
+```dockerfile
+# Use the official MongoDB image
+FROM mongo:latest
+
+# Expose MongoDB's default port
+EXPOSE 27017
+```
+
+### **Build and Run the MongoDB Container**
+```sh
+docker build -t my-mongo ./multi-tier-app/database
+docker run -d --name db --network backend-network my-mongo
+```
+- The database **only exists within the backend network** and is not exposed to the internet.
+
+---
+
+## **Step 5: Create the Backend Layer**
+Inside the `multi-tier-app/backend/` folder, create a **Dockerfile**:
+
+```sh
+cd ../backend
+touch Dockerfile
+```
+
+### **Dockerfile for Backend (Node.js)**
+```dockerfile
+# Use the official Node.js image
+FROM node:18
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm init -y && npm install express mongoose cors body-parser
+
+# Copy application code
+COPY . .
+
+# Create index.js with Express API and MongoDB connection
+RUN echo "const express = require('express'); \
+const mongoose = require('mongoose'); \
+const app = express(); \
+const PORT = 80; \
+mongoose.connect('mongodb://db:27017/mydb', { useNewUrlParser: true, useUnifiedTopology: true }) \
+.then(() => console.log('Connected to MongoDB')) \
+.catch(err => console.log('MongoDB connection error:', err)); \
+app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
+
+# Expose port 80 for communication
+EXPOSE 80
+
+# Run the application
+CMD ["node", "index.js"]
+```
+
+### **Build and Run the Backend Container**
+```sh
+docker build -t backend-app ./multi-tier-app/backend
+docker run -d --name api --network backend-network backend-app
+```
+- The backend is only connected to the **backend network**.
+- The backend can access MongoDB using `mongodb://db:27017/mydb`.
+
+---
+
+## **Step 6: Create the Frontend Layer**
+Inside the `multi-tier-app/frontend/` folder, create a **Dockerfile**:
+
+```sh
+cd ../frontend
+touch Dockerfile
+```
+
+### **Dockerfile for Frontend (React with Nginx)**
+```dockerfile
+# Use the official Node.js image for building React
+FROM node:18 as build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source code and build
+COPY . .
+RUN npm run build
+
+# Use Nginx to serve the React app
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### **Build and Run the Frontend Container**
+```sh
+docker build -t frontend-app ./multi-tier-app/frontend
+docker run -d --name ui --network frontend-network -p 80:80 frontend-app
+```
+- The frontend runs on port 80 and is exposed to port 80.
+
+---
+
+## **Step 7: Connect Backend and Frontend Networks**
+Since the backend needs to communicate with both **MongoDB** and **Frontend**, it must be connected to both networks.
+
+```sh
+docker network connect frontend-network api
+```
+- The **frontend can reach the backend**.
+- The **backend can still access MongoDB** but remains **hidden from the frontend**.
+
+---
+
+## **Step 8: Verify Network Connectivity**
+### **Check Network Connections**
+```sh
+docker network inspect backend-network
+docker network inspect frontend-network
+```
+- The backend should now appear in both networks.
+
+### **Test Backend API from the Host**
+```sh
+curl http://localhost
+```
+Expected output:
+```
+Hello from Backend
+```
+
+### **Test Frontend and Backend Communication**
+```sh
+docker exec -it ui /bin/sh
+```
+Inside the frontend container:
+```sh
+curl api
+```
+Expected output:
+```
+Hello from Backend
+```
+- This confirms the **frontend successfully communicates with the backend**.
