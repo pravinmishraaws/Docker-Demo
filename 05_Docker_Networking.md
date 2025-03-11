@@ -882,7 +882,7 @@ curl http://localhost
 
 Alternatively, open a web browser and go to:
 ```
-http://localhost
+http://PubliIP
 ```
 The default Nginx welcome page should be visible.
 
