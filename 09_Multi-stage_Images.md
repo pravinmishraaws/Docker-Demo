@@ -85,6 +85,7 @@ FROM node:18 AS builder
 WORKDIR /app
 
 # Copy package.json and install dependencies (only production dependencies)
+COPY package*.json ./
 RUN npm install --only=production
 
 # Copy the entire application code
