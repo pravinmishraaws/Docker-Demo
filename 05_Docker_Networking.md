@@ -460,12 +460,6 @@ docker ps -aq | xargs -r docker rm
 - `xargs -r docker stop` stops all running containers.
 - `xargs -r docker rm` removes all containers.
 
-### **Remove Custom Networks**
-```sh
-docker network ls | grep '-network' | awk '{print $1}' | xargs -r docker network rm
-```
-- Lists all networks and removes any custom-created ones.
-
 ### **Remove Unused Images**
 ```sh
 docker images -q | xargs -r docker rmi -f
@@ -577,7 +571,7 @@ CMD ["node", "index.js"]
 
 ### **Build and Run the Backend Container**
 ```sh
-docker build -t backend-app ./multi-tier-app/backend
+docker build -t backend-app .
 docker run -d --name api --network backend-network backend-app
 ```
 - The backend is only connected to the **backend network**.
@@ -608,7 +602,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 ### **Build and Run the Frontend Container**
 ```sh
-docker build -t frontend-app ./multi-tier-app/frontend
+docker build -t frontend-app .
 docker run -d --name ui --network frontend-network -p 80:80 frontend-app
 ```
 - The frontend runs on port 80 and is exposed to port 80.
@@ -634,13 +628,19 @@ docker network inspect frontend-network
 ```
 - The backend should now appear in both networks.
 
-### **Test Backend API from the Host**
+### **Test FrontEnd from the Host**
 ```sh
-curl http://localhost
+curl http://PublicIP
 ```
 Expected output:
 ```
-Hello from Backend
+Welcome to nginx!
+If you see this page, the nginx web server is successfully installed and working. Further configuration is required.
+
+For online documentation and support please refer to nginx.org.
+Commercial support is available at nginx.com.
+
+Thank you for using nginx.
 ```
 
 ### **Test Frontend and Backend Communication**
