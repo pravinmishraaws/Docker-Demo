@@ -241,6 +241,14 @@ CMD ["nginx", "-g", "daemon off;"]
 ---
 
 ## **Step 4: Build and Start the Application**
+
+**Install docker-compose**
+
+```sh
+sudo apt  install docker-compose
+```
+
+
 Navigate to `multi-tier-app/` and run:
 ```sh
 docker-compose up --build -d
