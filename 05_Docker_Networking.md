@@ -228,10 +228,10 @@ a9f58b94c8a0   mynetwork   bridge    local
 ```
 The new `mynetwork` should be listed.
 
-## **Step 3: Run the Backend API**
+## **Step 3: Run the Frontend Application**
 
-## **A: Create a Dockerfile for the Backend**
-Instead of running backend commands manually, a **Dockerfile** will be used to build a containerized backend service.
+## **A: Create a Dockerfile for the Frontend**
+Instead of running Frontend commands manually, a **Dockerfile** will be used to build a containerized Frontend service.
 
 ### **Updated Dockerfile**
 ```dockerfile
@@ -250,9 +250,9 @@ RUN npm init -y && npm install express
 # Create index.js with basic Express code running on port 80
 RUN echo "const express = require('express'); \
 const app = express(); \
-app.get('/', (req, res) => res.send('Hello from Backend')); \
+app.get('/', (req, res) => res.send('Hello from Frontend')); \
 const PORT = 80; \
-app.listen(PORT, () => console.log('Backend running on port ' + PORT));" > index.js
+app.listen(PORT, () => console.log('Frontend running on port ' + PORT));" > index.js
 
 # Expose port 80 to the host
 EXPOSE 80
@@ -263,28 +263,28 @@ CMD ["node", "index.js"]
 
 ---
 
-## **B: Build and Run the Backend Container**
+## **B: Build and Run the Frontend Container**
 After creating the `Dockerfile`, the next steps are:
 
 ### **Build the Docker Image**
 ```sh
-docker build -t backend-app .
+docker build -t frontend-app .
 ```
 
 ### **Run the Backend Container in the Custom Network**
 ```sh
-docker run -d --name backend --network mynetwork -p 80:80 backend-app
+docker run -d --name frontend --network mynetwork -p 80:80 frontend-app
 ```
 
 ### **Command Breakdown**
-- `docker build -t backend-app .`: Creates a Docker image named `backend-app`.
-- `docker run -d --name backend`: Runs the backend container in detached mode with the name `backend`.
-- `--network mynetwork`: Ensures the backend is connected to `mynetwork`.
+- `docker build -t frontend-app .`: Creates a Docker image named `frontend-app`.
+- `docker run -d --name frontend`: Runs the Frontend container in detached mode with the name `frontend`.
+- `--network mynetwork`: Ensures the Frontend is connected to `mynetwork`.
 - `-p 80:80`: Maps **container port 80** to **host port 80**.
 
 ---
 
-## **C: Verify Backend is Running**
+## **C: Verify Frontend is Running**
 Check the running containers:
 
 ```sh
@@ -294,7 +294,7 @@ docker ps
 Expected output:
 ```
 CONTAINER ID   IMAGE         COMMAND                  PORTS                   NAMES
-b1d5a7c8e9f2   backend-app   "node index.js"         0.0.0.0:80->80/tcp       backend
+b1d5a7c8e9f2   frontend-app   "node index.js"         0.0.0.0:80->80/tcp       frontend
 ```
 
 ### **Test the Backend from the Host**
@@ -306,28 +306,28 @@ curl http://<publicIP>
 
 Expected output:
 ```
-Hello from Backend
+Hello from Frontend
 ```
 
 This confirms that:
-- The **backend container is running on port 80**.
+- The **Frontend container is running on port 80**.
 - It is accessible from the **host machine**.
 
 
-## **Step 4: Run the Frontend**
-Now, deploy an Nginx container as the frontend.
+## **Step 4: Run the Backend**
+Now, deploy an Nginx container as the Backend.
 
 ```sh
-docker run -d --name frontend --network mynetwork nginx
+docker run -d --name backend --network mynetwork nginx
 ```
 
 ### **Command Breakdown**
 - `docker run -d`: Runs the container in detached mode.
-- `--name frontend`: Assigns the container the name `frontend`.
+- `--name backend`: Assigns the container the name `backend`.
 - `--network mynetwork`: Connects the container to `mynetwork`.
-- `nginx`: Uses Nginx as the frontend service.
+- `nginx`: Uses Nginx as the backend service.
 
-Verify that the frontend is running:
+Verify that the backend is running:
 ```sh
 docker ps
 ```
@@ -335,8 +335,8 @@ docker ps
 Expected output:
 ```
 CONTAINER ID   IMAGE    COMMAND                 PORTS                    NAMES
-d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:80->80/tcp    backend
-a8d2c9f8e6a7   nginx    "/docker-entrypoint.…"  80/tcp                    frontend
+d7cfa6a9b8e2   node:18  "bash -c 'npm init …"   0.0.0.0:80->80/tcp    frontend
+a8d2c9f8e6a7   nginx    "/docker-entrypoint.…"  80/tcp                    backend
 ```
 Both `backend` and `frontend` should be listed.
 
