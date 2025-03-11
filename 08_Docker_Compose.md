@@ -17,6 +17,91 @@ Docker Compose simplifies multi-container applications by allowing you to:
 
 ---
 
+## **Cleanup Guide before we start**  
+
+## **1. Remove All Stopped Containers**  
+Before removing all images, it is recommended to **remove stopped containers** to free up space.  
+
+### **Check for Stopped Containers**  
+Run the following command to list all stopped containers:  
+```sh
+docker ps -a
+```  
+If there are containers that you no longer need, remove them using:  
+```sh
+docker container prune -f
+```  
+The `-f` flag forces removal **without confirmation**. If you want a prompt before deletion, remove `-f`.  
+
+---
+
+## **2. Stop and Remove All Running Containers**  
+To completely clean up running containers:  
+
+### **List Running Containers**  
+```sh
+docker ps
+```  
+### **Stop All Running Containers**  
+```sh
+docker stop $(docker ps -q)
+```  
+### **Remove All Containers (Stopped + Running)**  
+```sh
+docker rm $(docker ps -aq)
+```  
+
+---
+
+## **3. Remove All Docker Images**  
+After stopping and removing containers, remove all images to free up space.  
+
+### **List All Images**  
+```sh
+docker images
+```  
+### **Remove All Images**  
+```sh
+docker rmi -f $(docker images -q)
+```  
+
+---
+
+## **4. Remove All Unused Docker Data (Volumes, Networks, and Build Cache)**  
+To completely clean up the system, remove unused volumes, networks, and build cache.  
+
+### **Remove Unused Volumes**  
+```sh
+docker volume prune -f
+```  
+### **Remove Unused Networks**  
+```sh
+docker network prune -f
+```  
+### **Remove Build Cache (Dangling Images, Unused Layers)**  
+```sh
+docker system prune -a -f
+```  
+This command removes **all stopped containers, unused networks, dangling images, and build cache**.  
+
+---
+
+## **Final Verification**  
+Run the following commands to confirm everything is removed:  
+
+- **Check that no containers are running or stopped:**  
+  ```sh
+  docker ps -a
+  ```  
+- **Check that no images exist:**  
+  ```sh
+  docker images
+  ```  
+- **Check that no volumes exist:**  
+  ```sh
+  docker volume ls
+  ```  
+
 ## **Step 1: Define the Project Structure**
 Create the following folder structure:
 
