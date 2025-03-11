@@ -279,11 +279,37 @@ This volume will **store data persistently**, even if the backend container stop
 
 ---
 
+**Set Up the Folder Structure**
+
+Create the project structure:
+
+```
+mkdir -p two-tier-app/{frontend,backend,database}
+```
+
+Folder structure:
+
+```
+multi-tier-app/
+│-- frontend/
+│   └── Dockerfile
+│-- backend/
+│   └── Dockerfile
+```
+
+Now, create Dockerfiles for each layer.
+
 ## **Step 4: Run the Backend Service with Persistent Storage**
 Now, deploy a **backend API** that writes data to the shared volume.
 
 ### **A: Create a Dockerfile for the Backend**
 Create a new **Dockerfile** inside a `backend/` directory:
+
+```
+cd two-tier-app/backend
+touch Dockerfile
+```
+
 
 ```Dockerfile
 # Use the official Node.js image
@@ -344,6 +370,11 @@ Now, deploy a **frontend container** that reads data from the shared volume.
 
 ### **A: Create a Dockerfile for the Frontend**
 Create a new **Dockerfile** inside a `frontend/` directory:
+
+```
+cd two-tier-app/frontend
+touch Dockerfile
+```
 
 ```Dockerfile
 # Use the official Node.js image
