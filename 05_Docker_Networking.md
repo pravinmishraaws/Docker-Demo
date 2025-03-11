@@ -782,3 +782,140 @@ This confirms:
 - Data can be **written and retrieved** from the database.
 
 ---
+
+
+## **Scenario 5: Using Host Mode for High-Performance Applications**
+
+### **Problem Statement**
+A high-performance application requires direct access to the host’s network to reduce latency and avoid network overhead. Docker’s default bridge network introduces **Network Address Translation (NAT)**, which can add delays.
+
+To eliminate this overhead, we can use **host networking**, where the container shares the host’s network stack.
+
+---
+
+## **Solution: Use Host Networking Mode**
+By using **Docker’s host networking mode**, the container will:
+- Directly use the **host's IP address and network interfaces**.
+- Eliminate the need for **NAT (Network Address Translation)**.
+- Avoid explicit port mappings since the container runs as if it were a native process on the host.
+
+---
+
+## **Step 1: Clean Up Old Containers (Optional)**
+Before running a new container in **host mode**, ensure no conflicting containers are running.
+
+### **Stop and Remove Any Running Containers**
+```sh
+docker ps -q | xargs -r docker stop
+docker ps -aq | xargs -r docker rm
+```
+
+### **Command Breakdown**
+- `docker ps -q`: Lists all running container IDs.
+- `xargs -r docker stop`: Stops all running containers.
+- `docker ps -aq`: Lists all container IDs (including stopped ones).
+- `xargs -r docker rm`: Removes all containers.
+
+---
+
+## **Step 2: Run an Application in Host Network Mode**
+Deploy **Nginx**, a lightweight web server, using host networking.
+
+```sh
+docker run -d --network host --name fastapp nginx
+```
+
+### **Command Breakdown**
+- `docker run -d`: Runs the container in detached mode.
+- `--network host`: Uses **host networking mode**, allowing the container to directly use the **host’s network stack**.
+- `--name fastapp`: Assigns the container a name for easier management.
+- `nginx`: Uses the official Nginx web server image.
+
+---
+
+## **Step 3: Verify the Running Container**
+Since host networking **does not display exposed ports in `docker ps`**, check running containers:
+
+```sh
+docker ps
+```
+
+Expected output:
+```
+CONTAINER ID   IMAGE    COMMAND                  STATUS        NAMES
+e3d7c6b2a8e1   nginx    "/docker-entrypoint.…"   Up 10 min     fastapp
+```
+Unlike **bridge mode**, no ports are listed because the container directly shares the host’s networking stack.
+
+---
+
+## **Step 4: Access the Application**
+Since Nginx runs on **port 80** by default, access it using:
+
+```sh
+curl http://localhost
+```
+
+### **Expected Output**
+```
+<!DOCTYPE html>
+<html>
+<head><title>Welcome to nginx!</title></head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and working.</p>
+</body>
+</html>
+```
+
+Alternatively, open a web browser and go to:
+```
+http://localhost
+```
+The default Nginx welcome page should be visible.
+
+---
+
+## **Step 5: Verify the Network Mode**
+To confirm that the container is **running in host mode**, inspect it:
+
+```sh
+docker inspect fastapp | grep '"NetworkMode"'
+```
+
+### **Expected Output**
+```
+"NetworkMode": "host",
+```
+This confirms that **Docker is not using bridge mode or any other virtualized network**.
+
+---
+
+## **Step 6: Stop and Remove the Container (Cleanup)**
+If you no longer need the container, remove it:
+
+```sh
+docker stop fastapp
+docker rm fastapp
+```
+
+---
+
+## **Key Takeaways**
+| Feature | Bridge Mode (`--network bridge`) | Host Mode (`--network host`) |
+|---------|--------------------------------------|---------------------------------|
+| Container gets its own IP | Yes | No (Uses host’s IP) |
+| NAT (Network Address Translation) | Yes | No |
+| Explicit Port Mapping (`-p`) | Required | Not needed |
+| Best for | General applications | Low-latency applications |
+
+### **When to Use Host Mode**
+- Performance-critical workloads such as real-time data processing and low-latency APIs.
+- Monitoring and networking tools that need access to host-level network traffic.
+- Applications that must bind to a specific port without remapping, such as VoIP or gaming servers.
+
+### **When Not to Use Host Mode**
+- If port conflicts may occur since the container shares the same ports as the host.
+- If multiple containers need to run on the same ports.
+- When security isolation is required, as containers in host mode have direct access to the host system.
+
