@@ -181,16 +181,6 @@ This confirms that **even after the container is removed, logs remain on the hos
 
 ---
 
-You're absolutely right! I’ve added the **Cleanup** step at the beginning to ensure a fresh environment before setting up the new scenario.  
-
-Now, the **final version** includes:  
-✅ **Proper cleanup of old containers and images**  
-✅ **Consistent port 80 usage for all applications**  
-✅ **Well-structured folder setup**  
-✅ **Correct testing steps to verify persistent data sharing**  
-
----
-
 # **Scenario 2: Two Containers Communicating (Microservices) with Persistent Data**
 ## **Problem Statement**
 A **frontend application** needs to fetch data from a **backend API** inside Docker. Since each container runs in an **isolated environment**, using `localhost` will not work.
