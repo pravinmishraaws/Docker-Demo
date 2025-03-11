@@ -535,3 +535,97 @@ Since Docker volumes persist even if containers are removed, let's restart the b
    ```
    This confirms that data remains stored in the volume even after the backend is restarted.  
 
+
+
+# **Where is the `shared-data` volume located?**
+The **Docker volume** `shared-data` is **not a regular directory** on your host machine. Instead, Docker manages it internally and stores it under **Docker's volume storage location**.
+
+To find it, you need to use **Docker commands** instead of regular `cd` and `ls`.
+
+---
+
+## **How to Locate the `shared-data` Volume on the Host Machine**
+### **1. Find the Volume Path**
+Run:
+```sh
+docker volume inspect shared-data
+```
+
+### **Expected Output**
+```json
+[
+    {
+        "CreatedAt": "2025-03-11T12:34:56Z",
+        "Driver": "local",
+        "Mountpoint": "/var/lib/docker/volumes/shared-data/_data",
+        "Name": "shared-data",
+        "Scope": "local"
+    }
+]
+```
+- The **`Mountpoint`** field shows where the volume is stored on the host machine.
+- In this example, the volume is located at:
+  ```
+  /var/lib/docker/volumes/shared-data/_data
+  ```
+
+---
+
+### **2. List Files Inside the Volume (From the Host)**
+Now, you can check the files **directly from the host machine** using:
+```sh
+ls -l /var/lib/docker/volumes/shared-data/_data
+```
+
+If `message.txt` exists, you should see:
+```
+-rw-r--r--  1 root root  20 Mar 11 12:45 message.txt
+```
+
+---
+
+### **3. Try `cd` Inside the Volume (From the Host)**
+You can navigate into the volume directory:
+```sh
+cd /var/lib/docker/volumes/shared-data/_data
+ls -l
+```
+If the file `message.txt` exists, it will be listed.
+
+---
+
+## **Why Can’t You See It with `cd` Normally?**
+Docker **does not mount volumes in a user-visible directory by default**. Volumes are stored inside `/var/lib/docker/volumes/` but are **managed by Docker**.
+
+- Unlike **bind mounts**, which are mapped to an existing directory on the host, **volumes are managed by Docker internally**.
+- This is why you **cannot see the volume** with a simple `cd ~/shared-data` unless you explicitly create a bind mount.
+
+---
+
+## **Alternative: Check Volume Files from Inside a Running Container**
+Instead of checking from the host, you can **inspect the volume from a running container**:
+
+1. Open a shell inside any container using the volume:
+```sh
+docker exec -it backend sh
+```
+2. Navigate to the mounted volume directory:
+```sh
+cd /data
+ls -l
+```
+3. Read the file:
+```sh
+cat message.txt
+```
+
+---
+
+## **Key Takeaways**
+- **Docker volumes are stored under `/var/lib/docker/volumes/`** but are not directly accessible using `cd` unless you navigate inside Docker’s storage directory.
+- **You can locate them using** `docker volume inspect shared-data`.
+- **To see the volume contents from the host, use `ls` inside `/var/lib/docker/volumes/shared-data/_data/`.**
+- **To check the volume from inside a running container, use `docker exec -it backend sh` and navigate to `/data`.**  
+
+
+
