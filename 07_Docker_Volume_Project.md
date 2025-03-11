@@ -1,5 +1,3 @@
-# Practical Demonstrations: Integrating Docker Volumes
-
 # **Scenario 1: Running a Standalone Application with Persistent Logs**
 
 ## **Problem Statement**
