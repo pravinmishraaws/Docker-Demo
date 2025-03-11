@@ -380,7 +380,13 @@ docker exec -it frontend curl backend
 
 ### **Expected Output**
 ```
-Hello from Backend
+Welcome to nginx!
+If you see this page, the nginx web server is successfully installed and working. Further configuration is required.
+
+For online documentation and support please refer to nginx.org.
+Commercial support is available at nginx.com.
+
+Thank you for using nginx.
 ```
 If this output appears, it confirms that:
 - The `backend` container is running properly.
@@ -412,7 +418,13 @@ curl backend
 
 Expected output:
 ```
-Hello from Backend
+Welcome to nginx!
+If you see this page, the nginx web server is successfully installed and working. Further configuration is required.
+
+For online documentation and support please refer to nginx.org.
+Commercial support is available at nginx.com.
+
+Thank you for using nginx.
 ```
 
 ### **Step 4: Exit the Frontend Container**
