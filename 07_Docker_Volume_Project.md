@@ -101,13 +101,13 @@ This directory will store **Nginx logs** outside the container.
 Run the Nginx container while **mounting the logs directory**:
 
 ```sh
-docker run -d -p 8080:80 -v ~/nginx-logs:/var/log/nginx --name myweb nginx
+docker run -d -p 80:80 -v ~/nginx-logs:/var/log/nginx --name myweb nginx
 ```
 
 ### **Command Breakdown**
 - `docker run`: Starts a **new container**.
 - `-d`: Runs the container in **detached mode** (in the background).
-- `-p 8080:80`: Maps **port 8080** on the **host machine** to **port 80** inside the container.
+- `-p 80:80`: Maps **port 80** on the **host machine** to **port 80** inside the container.
 - `-v ~/nginx-logs:/var/log/nginx`:  
   - **Maps the Nginx logs directory** (`/var/log/nginx`) inside the container to **`~/nginx-logs`** on the host.
   - **Ensures logs persist** even if the container is stopped or deleted.
@@ -124,11 +124,22 @@ docker ps
 ### **Expected Output**
 ```
 CONTAINER ID   IMAGE    COMMAND                  PORTS                    NAMES
-c1d5f7e2a15b   nginx    "/docker-entrypoint.…"   0.0.0.0:8080->80/tcp     myweb
+c1d5f7e2a15b   nginx    "/docker-entrypoint.…"   0.0.0.0:80->80/tcp     myweb
 ```
 The container is now **running and accessible**.
 
-## **Step 8: Verify That Logs Are Being Written**
+
+## **Step 8: Access the Application**
+Open a **web browser** and go to:
+
+```
+http://PublicIP:8080
+```
+
+You should see the **Nginx welcome page**.
+
+
+## **Step 9: Verify That Logs Are Being Written**
 Check if Nginx logs are being saved on the host:
 
 ```sh
@@ -141,7 +152,7 @@ access.log  error.log
 ```
 This confirms that **logs are stored on the host machine**.
 
-## **Step 9: Remove the Container and Check Log Persistence**
+## **Step 10: Remove the Container and Check Log Persistence**
 Stop and remove the container:
 
 ```sh
@@ -161,14 +172,6 @@ access.log  error.log
 ```
 This confirms that **even after the container is removed, logs remain on the host machine**.
 
-## **Step 10: Access the Application**
-Open a **web browser** and go to:
-
-```
-http://PublicIP:8080
-```
-
-You should see the **Nginx welcome page**.
 
 ## **Key Takeaways**
 - The `docker images` command **verifies if an image is available locally**.
