@@ -27,7 +27,7 @@ To solve these problems, **Docker provides two storage options**:
 A **bind mount** maps a directory from the **host system** into a **container**. Changes made in this directory reflect on both sides.
 
 ### **How Bind Mounts Work**
-- A directory from the **host machine** (e.g., `/app/logs/`) is mapped to a directory inside the container (e.g., `/var/logs`).
+- A directory from the **host machine** (e.g., `/app/logs/`) is mapped to a directory inside the container (e.g., `/container/logs`).
 - If the container is removed, the data **remains on the host system**.
 - A **new container** can access the same directory, ensuring data persistence.
 
