@@ -51,6 +51,7 @@ docker run -d -v /host/logs:/container/logs nginx
 - `-v /host/logs:/container/logs` → Maps **`/host/logs`** from the host to **`/container/logs`** inside the container.
 
 **Pros:**
+
 ✔ Simple to use.  
 ✔ Ensures data **remains** on the host machine.  
 ✔ Allows **containers to access external files**.
@@ -79,6 +80,7 @@ docker run -d --mount source=myvolume,target=/app/data nginx
 - `--mount source=myvolume,target=/app/data` → Mounts the volume at `/app/data` inside the container.
 
 **Pros:**
+
 ✔ Managed by Docker.  
 ✔ **Survives** container removals.  
 ✔ **Multiple containers** can use the same volume.  
