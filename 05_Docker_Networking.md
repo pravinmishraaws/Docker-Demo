@@ -595,29 +595,15 @@ touch Dockerfile
 
 ### **Dockerfile for Frontend (React with Nginx)**
 ```dockerfile
-# Use the official Node.js image for building React
-FROM node:18 as build
-
-# Set working directory
-WORKDIR /app
-
-# Copy package.json and install dependencies
-COPY package*.json ./
-RUN npm install
-
-# Copy source code and build
-COPY . .
-RUN npm run build
-
-# Use Nginx to serve the React app
+# Use the official lightweight Nginx image
 FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
 
-# Expose port 80
+# Expose port 80 to allow incoming traffic
 EXPOSE 80
 
-# Start Nginx
+# Start Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
+
 ```
 
 ### **Build and Run the Frontend Container**
