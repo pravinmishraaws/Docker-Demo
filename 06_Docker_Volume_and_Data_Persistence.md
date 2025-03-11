@@ -132,3 +132,11 @@ Now that we understand the **theory**, let's move to **practical scenarios** dem
    - Use Docker-managed storage to store and retrieve data even after container restarts.
 4. **Scenario 4: Accessing Host Files from a Container**  
    - Mount a host directory inside a container to process external files.
+
+
+## Scenario 3: Multi-Tier Architecture (Frontend, Backend, Database)
+
+Task: Persisting database data using volumes
+
+Test: Delete the database container and create and show, is data persist. 
+
