@@ -152,8 +152,6 @@ services:
     networks:
       - backend-network
       - frontend-network
-    ports:
-      - "80:80"
 
   frontend:
     build: ./frontend
