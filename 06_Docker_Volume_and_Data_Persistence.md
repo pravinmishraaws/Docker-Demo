@@ -56,6 +56,7 @@ docker run -d -v /host/logs:/container/logs nginx
 ✔ Allows **containers to access external files**.
 
 **Cons:**
+
 ✖ Not **fully managed** by Docker.  
 ✖ If the host directory is deleted, the data is lost.
 
@@ -84,6 +85,7 @@ docker run -d --mount source=myvolume,target=/app/data nginx
 ✔ Supports **remote storage** (NFS, cloud storage).
 
 **Cons:**
+
 ✖ Slightly more complex than bind mounts.  
 ✖ Stored inside **Docker’s internal directory** (`/var/lib/docker/volumes/`).
 
