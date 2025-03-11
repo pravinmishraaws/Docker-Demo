@@ -284,7 +284,7 @@ This volume will **store data persistently**, even if the backend container stop
 Create the project structure:
 
 ```
-mkdir -p two-tier-app/{frontend,backend,database}
+mkdir -p two-tier-app/{frontend,backend}
 ```
 
 Folder structure:
