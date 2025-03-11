@@ -292,25 +292,6 @@ Expected output:
 Hello from Backend
 ```
 
-### **Check Database Connection**
-Access the backend container:
-```sh
-docker exec -it api /bin/sh
-```
-Inside the backend container, run:
-```sh
-mongosh --host db --port 27017
-```
-Expected output:
-```
-Current MongoDB server version: 6.x.x
-Connecting to: mongodb://db:27017/
-```
-Exit:
-```sh
-exit
-```
-
 ---
 
 ## **Step 7: Manage Services**
