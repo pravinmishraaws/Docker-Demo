@@ -333,6 +333,9 @@ const DATA_FILE = '/data/message.txt'; \
 app.get('/write', (req, res) => { fs.writeFileSync(DATA_FILE, 'Hello from Backend!'); res.send('Data written!'); }); \
 app.listen(80, () => console.log('Backend running on port 80'));" > index.js
 
+# Expose port 80 to the host
+EXPOSE 80
+
 # Run the application
 CMD ["node", "index.js"]
 ```
@@ -387,6 +390,9 @@ const app = express(); \
 const DATA_FILE = '/data/message.txt'; \
 app.get('/', (req, res) => { res.send(fs.existsSync(DATA_FILE) ? fs.readFileSync(DATA_FILE, 'utf8') : 'No data found.'); }); \
 app.listen(80, () => console.log('Frontend running on port 80'));" > index.js
+
+# Expose port 80 to the host
+EXPOSE 80
 
 # Run the application
 CMD ["node", "index.js"]
