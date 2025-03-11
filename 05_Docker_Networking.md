@@ -784,7 +784,7 @@ This confirms:
 ---
 
 
-## **Scenario 5: Using Host Mode for High-Performance Applications**
+# **Scenario 4: Using Host Mode for High-Performance Applications**
 
 ### **Problem Statement**
 A high-performance application requires direct access to the host’s network to reduce latency and avoid network overhead. Docker’s default bridge network introduces **Network Address Translation (NAT)**, which can add delays.
