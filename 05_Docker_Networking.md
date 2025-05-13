@@ -626,7 +626,7 @@ docker run -d --name ui --network frontend-network -p 80:80 frontend-app
 Since the backend needs to communicate with both **MongoDB** and **Frontend**, it must be connected to both networks.
 
 ```sh
-docker network connect frontend-network api
+docker network connect frontend-network backend-app
 ```
 - The **frontend can reach the backend**.
 - The **backend can still access MongoDB** but remains **hidden from the frontend**.
