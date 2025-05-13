@@ -626,7 +626,7 @@ docker run -d --name ui --network frontend-network -p 80:80 frontend-app
 Since the backend needs to communicate with both **MongoDB** and **Frontend**, it must be connected to both networks.
 
 ```sh
-docker network connect frontend-network backend-app
+docker network connect frontend-network api
 ```
 - The **frontend can reach the backend**.
 - The **backend can still access MongoDB** but remains **hidden from the frontend**.
@@ -740,11 +740,16 @@ Run the following commands inside the container:
 
 ```sh
 apt-get update
-apt-get install -y wget gnupg
-wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
-echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+apt-get install -y curl gnupg
+
+curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-6.0.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg] http://repo.mongodb.org/apt/debian buster/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
 apt-get update
-apt-get install -y mongodb-mongosh
+apt-get install -y mongodb-org
+systemctl start mongod
+systemctl enable mongod
 ```
 
 
