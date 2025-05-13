@@ -16,6 +16,7 @@ Docker provides multiple networking modes, each suited for different use cases.
 | **Host** | The container shares the host's network stack, removing network isolation. |
 | **None** | The container has no network access, making it useful for security. |
 | **Overlay** | Used in multi-host Swarm setups for inter-container communication. |
+| **macvlan** | A local scope network driver which is configured per-host |
 
 ### **How to List Available Networks**
 Before diving into practical scenarios, it is important to check the existing Docker networks on your machine.
