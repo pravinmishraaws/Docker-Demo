@@ -2,18 +2,38 @@
 
 ### **Problem Statement**
 Previously, we set up a **multi-tier web application** using **Docker CLI** commands. This approach involved:
-- Manually creating networks.
-- Individually building and running each container.
-- Managing dependencies between services manually.
 
-This becomes complex and hard to manage, especially when deploying at scale.
+- Run MongoDB
+- Link backend to MongoDB
+- Then start frontend
+- Create bridge networks manually
+- Restart one service? You redo everything.
+- You write 10+ commands every time.
+
+❌ Challenge:
+
+- Too many manual steps
+- Forget one step = app fails
+- Not scalable
+- Hard to share with a teammate
+
+### As a DevOps/Cloud Engineers 
+
+- Consistency across teams
+- One-command deployment
+- Repeatability across dev, test, and prod
+- Version-controlled infrastructure
+
+> Instead of documenting 15 commands in Confluence, let’s you define the entire system in one file.
 
 ### **Solution: Use Docker Compose**
 Docker Compose simplifies multi-container applications by allowing you to:
+
 - Define services, networks, and volumes in a single YAML file.
-- Start and stop the entire application with a single command.
-- Automate dependencies (e.g., backend waits for the database).
-- Improve maintainability.
+- Setup networks and volumes
+- Control startup order (depends_on)
+- One command to bring up: docker-compose up -d
+- One command to shut down: docker-compose down
 
 ---
 
