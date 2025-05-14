@@ -1,13 +1,16 @@
-## **Docker Compose for Multi-Tier Architecture (Frontend, Backend, Database)**
+## **Docker Compose for Three-Tier Architecture (Frontend, Backend, Database)**
 
 ### **Problem Statement**
-Previously, we set up a **multi-tier web application** using **Docker CLI** commands. This approach involved:
+Previously, we set up a **Three-tier web application** using **Docker CLI** commands. This approach involved:
 
+- Create the network
+- Create Database image
 - Run MongoDB
-- Link backend to MongoDB
-- Then start frontend
+- Create Backend image
+- Create backend
+- Create Frontend image
+- Then Create frontend
 - Create bridge networks manually
-- Restart one service? You redo everything.
 - You write 10+ commands every time.
 
 ❌ Challenge:
