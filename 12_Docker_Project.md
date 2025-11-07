@@ -60,7 +60,7 @@ Refer to the Azure **Network Settings** UI to apply these changes.
 ## **3. Transfer Application Code to the VM**
 Once the VM is running and network rules are configured, upload your application code to the VM.
 
-Download the Appliation code: **Link is given in Slack channel**
+[Download the Appliation code](https://github.com/pravinmishraaws/Azure-Static-Website)
 
 ### **Steps to Transfer Code:**
 1. Open a terminal on your local machine.
